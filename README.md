@@ -1,5 +1,5 @@
 # php-web
-PHP环境Dockerfile，包含 `php7.2` , `composer` , `nginx`
+PHP环境Dockerfile，包含 `php7.2` , `composer` , `nginx` , `git`
 
 https://stephen520.cn/blog/10242
 
