@@ -1,9 +1,9 @@
 # php-web
-Dockerfile
+PHP环境Dockerfile，包含 `php7.2` , `composer` , `nginx`
 
 ```shell
 docker run --name web -d -p 80:80 \
 -v /var/www/test/:/var/www/html \
 -v /var/www/test/nginx.conf:/etc/nginx/nginx.conf \
-php-web:1.0
+mhzuhe/php-web:1.0
 ```
