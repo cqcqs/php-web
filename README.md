@@ -63,7 +63,7 @@ docker build -t web:1.0 .
 docker run --name web -d -p 80:80 \
 -v /var/www/test/:/var/www/html \
 -v /var/www/test/nginx.conf:/etc/nginx/nginx.conf \
-mhzuhe/php-web:1.0
+web:1.0
 ```
 
 ### 博客
