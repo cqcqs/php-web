@@ -79,6 +79,9 @@ RUN php -r "copy('https://install.phpcomposer.com/installer', 'composer-setup.ph
     # Clean
     apt-get clean && rm -rf /var/cache/apt/*
 
+ADD . /var/www/html
+ADD ./nginx.conf /etc/nginx/sites-enabled/default
+
 COPY ./supervisord.conf /etc/supervisor/
 
 WORKDIR /var/www/html
