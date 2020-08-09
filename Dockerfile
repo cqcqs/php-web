@@ -1,23 +1,29 @@
 FROM php:7.4-fpm
 
-MAINTAINER Stephen "admin@stephen520.cn"
+MAINTAINER Stephen <admin@stephen520.cn>
+
+ARG timezone
+
+ENV TIMEZONE=${timezone:-"Asia/Shanghai"} \
+    SWOOLE_VERSION=4.5.2
 
 RUN sed -i "s@http://deb.debian.org@http://mirrors.aliyun.com@g" /etc/apt/sources.list && \
-    rm -Rf /var/lib/apt/lists/* && \
 
+    # Libs
     apt-get update && \
     apt-get install -y curl \
+                       wget \
                        telnet \
+                       vim \
                        git \
+                       nginx \
+                       supervisor \
+                       npm \
                        zlib1g-dev \
                        libzip-dev \
                        libpng-dev \
                        libjpeg62-turbo-dev \
                        libfreetype6-dev && \
-
-    # Timezone
-    /bin/cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo 'Asia/Shanghai' > /etc/timezone && \
 
     # PHP Library
     docker-php-ext-install zip \
@@ -29,28 +35,48 @@ RUN sed -i "s@http://deb.debian.org@http://mirrors.aliyun.com@g" /etc/apt/source
                            sockets \
                            pcntl && \
 
-    apt-get install -y nginx \
-                       supervisor \
-                       npm && \
-
     # cnpm
     npm install -g cnpm --registry=https://registry.npm.taobao.org && \
 
-    # composer
-    php -r "copy('https://install.phpcomposer.com/installer', 'composer-setup.php');" && \
+    # Clean apt cache
+    rm -rf /var/lib/apt/lists/*
+
+# composer
+RUN php -r "copy('https://install.phpcomposer.com/installer', 'composer-setup.php');" && \
     php composer-setup.php --install-dir=/usr/local/bin --filename=composer && \
     php -r "unlink('composer-setup.php');" && \
     composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/ && \
 
-    # Redis Mongo Swoole
-    pecl install redis mongodb swoole && \
+    # Redis Mongo
+    pecl install redis mongodb && \
     rm -rf /tmp/pear && \
-    docker-php-ext-enable redis mongodb swoole && \
+    docker-php-ext-enable redis mongodb && \
 
-    # GD
+    # Swoole
+    wget https://github.com/swoole/swoole-src/archive/v${SWOOLE_VERSION}.tar.gz -O swoole.tar.gz && \
+    mkdir -p swoole && \
+    tar -xf swoole.tar.gz -C swoole --strip-components=1 && \
+    rm swoole.tar.gz && \
+    ( \
+    cd swoole && \
+    phpize && \
+    ./configure --enable-mysqlnd --enable-sockets --enable-openssl --enable-http2 && \
+    make -j$(nproc) && \
+    make install \
+    ) && \
+    rm -r swoole && \
+    docker-php-ext-enable swoole && \
+
+    # GD Library
     docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ && \
     docker-php-ext-install -j$(nproc) gd && \
 
+    # Timezone
+    cp /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && \
+    echo "${TIMEZONE}" > /etc/timezone && \
+    echo "[Date]\ndate.timezone=${TIMEZONE}" > /usr/local/etc/php/conf.d/timezone.ini && \
+
+    # Clean
     apt-get clean && rm -rf /var/cache/apt/*
 
 COPY ./supervisord.conf /etc/supervisor/
